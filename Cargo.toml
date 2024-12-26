@@ -13,3 +13,5 @@ image = "0.25"
 
 [profile.release]
 lto = "thin"
+codegen-units = 1
+overflow-checks = false
