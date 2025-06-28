@@ -8,8 +8,12 @@ clap = { version = "4", features = ["derive"] }
 color-eyre = "0.6"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-serde_with = "3"
-image = "0.25"
+image = { version = "0.25", default-features = false, features = ["png"] }
+mimalloc = { version = "0.1", optional = true }
+
+[features]
+default = ["mimalloc"]
+all-formats = ["image/default-formats"]
 
 [profile.release]
 lto = "thin"

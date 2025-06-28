@@ -1,21 +1,25 @@
-pub mod args;
 pub mod info;
 
-use self::{args::Args, info::LightingInfo};
+use crate::info::ZLighting;
 use clap::Parser;
-use color_eyre::eyre::{ContextCompat, Result, WrapErr};
+use color_eyre::eyre::{eyre, ContextCompat, Result, WrapErr};
 use image::{ImageFormat, Rgba, RgbaImage};
-use std::path::Path;
+use std::path::PathBuf;
+
+#[cfg(feature = "mimalloc")]
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
+#[derive(Parser)]
+pub struct Args {
+	#[clap(short, long)]
+	pub input: PathBuf,
+	pub files: Vec<String>,
+}
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
 	let args = Args::parse();
-	let files = args
-		.files
-		.into_iter()
-		.map(|file| args::parse_path_arg(&file))
-		.collect::<Result<Vec<_>>>()
-		.wrap_err("failed to parse path args")?;
 
 	let info = info::read_info(&args.input).wrap_err_with(|| {
 		format!(
@@ -24,22 +28,32 @@ fn main() -> Result<()> {
 		)
 	})?;
 
-	for (path, z) in files {
-		handle_map(&info, &path, z).wrap_err_with(|| {
-			format!("failed to handle {path} (z={z:?})", path = path.display())
-		})?;
+	let files = match (info.len(), args.files.len()) {
+		(1, 1) => args.files,
+		(x, 1) => (1..=x)
+			.map(|z| args.files[0].replace("$z", &z.to_string()))
+			.collect(),
+		(x, y) if x == y => args.files,
+		_ => {
+			return Err(eyre!(
+				"You must either give one file per z-level as input, or a single file where $z \
+				 will be replaced with the z-level number."
+			))
+		}
+	};
+
+	for (info, path) in info.iter().zip(files.iter()) {
+		handle_map(info, path).wrap_err_with(|| format!("failed to handle {path}"))?;
 	}
 
 	Ok(())
 }
 
-fn handle_map(info: &LightingInfo, path: &Path, z: Option<u8>) -> Result<()> {
+fn handle_map(info: &ZLighting, path: &str) -> Result<()> {
 	const FULLDARK_ALPHA: f32 = 256.0 * 0.8;
 
-	let info = info
-		.get_info_for_z(z)
-		.wrap_err_with(|| format!("failed to get lighting info for z={z:?}"))?;
-	let mut image = image::open(path)
+	let path = PathBuf::from(path);
+	let mut image = image::open(&path)
 		.wrap_err("failed to open image")?
 		.to_rgba8();
 	let width = info.len() as u32;
@@ -70,7 +84,7 @@ fn handle_map(info: &LightingInfo, path: &Path, z: Option<u8>) -> Result<()> {
 		.wrap_err("path did not have filename")?
 		.to_str()
 		.wrap_err("path did not have valid UTF-8 filename")?;
-	let save_path = path.with_file_name(format!("lighting_{original_filename}.png"));
+	let save_path = path.with_file_name(format!("{original_filename}.lighting.png"));
 	image
 		.save_with_format(&save_path, ImageFormat::Png)
 		.wrap_err_with(|| {
