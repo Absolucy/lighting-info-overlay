@@ -17,12 +17,12 @@ jobs:
             - name: Install Rust Toolchain
               uses: actions-rust-lang/setup-rust-toolchain@v1
             - name: Build (release)
-              run: cargo build --release --locked --target x86_64-pc-windows-msvc --features vc-ltl,all-formats
+              run: cargo build --profile release-small --locked --target x86_64-pc-windows-msvc --features vc-ltl
             - name: Upload Build
               uses: actions/upload-artifact@v4
               with:
                   name: build-x86_64-pc-windows-msvc
-                  path: target/x86_64-pc-windows-msvc/release/lighting-info-overlay.exe
+                  path: target/x86_64-pc-windows-msvc/release-small/lighting-info-overlay.exe
     build-linux:
         name: Linux Build
         runs-on: ubuntu-latest
@@ -39,12 +39,12 @@ jobs:
             - name: Install cargo-zigbuild
               run: pip install cargo-zigbuild
             - name: Build (release)
-              run: cargo zigbuild --release --locked --target x86_64-unknown-linux-musl --features all-formats
+              run: cargo zigbuild --profile release-small --locked --target x86_64-unknown-linux-musl
             - name: Upload Build
               uses: actions/upload-artifact@v4
               with:
                   name: build-x86_64-unknown-linux-musl
-                  path: target/x86_64-unknown-linux-musl/release/lighting-info-overlay
+                  path: target/x86_64-unknown-linux-musl/release-small/lighting-info-overlay
     publish-release:
         name: Publish Release
         runs-on: ubuntu-latest

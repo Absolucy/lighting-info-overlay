@@ -18,9 +18,14 @@ default = ["mimalloc"]
 all-formats = ["image/default-formats"]
 
 [profile.release]
+debug = "limited"
 lto = "thin"
 codegen-units = 1
 overflow-checks = false
+
+[profile.release-small]
+inherits = "release"
+opt-level = "s"
 
 [lints.clippy]
 # presets
