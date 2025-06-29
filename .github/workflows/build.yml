@@ -1,40 +1,64 @@
 name: "Build"
 on:
-  push:
-  pull_request:
+    push:
+    pull_request:
 env:
     CARGO_TERM_COLOR: always
 jobs:
     build-windows:
         name: Windows Build
         runs-on: windows-latest
+        concurrency:
+            group: ${{ github.workflow }}-${{ github.ref }}-windows
+            cancel-in-progress: true
         steps:
             - name: Checkout Repository
               uses: actions/checkout@v4
             - name: Install Rust Toolchain
               uses: actions-rust-lang/setup-rust-toolchain@v1
             - name: Build (release)
-              run: cargo build --release --locked --target x86_64-pc-windows-msvc
+              run: cargo build --release --locked --target x86_64-pc-windows-msvc --features vc-ltl
             - name: Upload Build
               uses: actions/upload-artifact@v4
               with:
-                name: Windows Build
-                path: target/x86_64-pc-windows-msvc/release/lighting-info-overlay.exe
+                  name: build-x86_64-pc-windows-msvc
+                  path: target/x86_64-pc-windows-msvc/release/lighting-info-overlay.exe
     build-linux:
         name: Linux Build
         runs-on: ubuntu-latest
+        concurrency:
+            group: ${{ github.workflow }}-${{ github.ref }}-linux
+            cancel-in-progress: true
         steps:
             - name: Checkout Repository
               uses: actions/checkout@v4
             - name: Install Rust Toolchain
               uses: actions-rust-lang/setup-rust-toolchain@v1
               with:
-                target: x86_64-unknown-linux-musl
+                  target: x86_64-unknown-linux-musl
+            - name: Install cargo-zigbuild
+              run: pip install cargo-zigbuild
             - name: Build (release)
-              run: cargo build --release --locked --target x86_64-unknown-linux-musl
+              run: cargo zigbuild --release --locked --target x86_64-unknown-linux-musl
             - name: Upload Build
               uses: actions/upload-artifact@v4
               with:
-                name: Linux Build
-                path: target/x86_64-unknown-linux-musl/release/lighting-info-overlay
-
+                  name: build-x86_64-unknown-linux-musl
+                  path: target/x86_64-unknown-linux-musl/release/lighting-info-overlay
+    publish-release:
+        name: Publish Release
+        runs-on: ubuntu-latest
+        needs: [build-windows, build-linux]
+        if: startsWith(github.ref, 'refs/tags/')
+        permissions:
+            contents: write
+        steps:
+            - name: Download Previous Artifacts
+              uses: actions/download-artifact@v4
+            - name: Publish Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  fail_on_unmatched_files: true
+                  files: |
+                      build-x86_64-pc-windows-msvc/lighting-info-overlay.exe
+                      build-x86_64-unknown-linux-musl/lighting-info-overlay

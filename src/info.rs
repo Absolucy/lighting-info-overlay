@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Zlib
 use color_eyre::eyre::{Result, WrapErr};
 use serde::Deserialize;
 use std::{ops::Deref, path::Path};

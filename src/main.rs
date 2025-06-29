@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Zlib
 pub mod info;
 
 use crate::info::ZLighting;
-use clap::Parser;
-use color_eyre::eyre::{eyre, ContextCompat, Result, WrapErr};
+use argh::FromArgs;
+use color_eyre::eyre::{ContextCompat, Result, WrapErr, eyre};
 use image::{ImageFormat, Rgba, RgbaImage};
 use std::path::PathBuf;
 
@@ -10,16 +11,23 @@ use std::path::PathBuf;
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-#[derive(Parser)]
+#[derive(FromArgs)]
+/// Merge SS13 minimaps with lighting info from said map, in order to visualize
+/// how well-lit areas on said map are.
 pub struct Args {
-	#[clap(short, long)]
+	/// the .json file containing the lighting info for the map.
+	#[argh(option, short = 'i')]
 	pub input: PathBuf,
+	/// a list of image files of the map to use.
+	/// With multi-z maps, you can either pass one image per z-level,
+	/// or a single path, in which case $z will be replaced with the Z level.
+	#[argh(positional)]
 	pub files: Vec<String>,
 }
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
-	let args = Args::parse();
+	let args = argh::from_env::<Args>();
 
 	let info = info::read_info(&args.input).wrap_err_with(|| {
 		format!(
@@ -38,7 +46,7 @@ fn main() -> Result<()> {
 			return Err(eyre!(
 				"You must either give one file per z-level as input, or a single file where $z \
 				 will be replaced with the z-level number."
-			))
+			));
 		}
 	};
 
