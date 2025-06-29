@@ -50,8 +50,9 @@ fn main() -> Result<()> {
 		}
 	};
 
-	for (info, path) in info.iter().zip(files.iter()) {
+	for (idx, (info, path)) in info.iter().zip(files.iter()).enumerate() {
 		handle_map(info, path).wrap_err_with(|| format!("failed to handle {path}"))?;
+		println!("lit minimap for z{z} written to {path}", z = idx + 1);
 	}
 
 	Ok(())
