@@ -17,7 +17,7 @@ jobs:
             - name: Install Rust Toolchain
               uses: actions-rust-lang/setup-rust-toolchain@v1
             - name: Build (release)
-              run: cargo build --release --locked --target x86_64-pc-windows-msvc --features vc-ltl
+              run: cargo build --release --locked --target x86_64-pc-windows-msvc --features vc-ltl,all-formats
             - name: Upload Build
               uses: actions/upload-artifact@v4
               with:
@@ -39,7 +39,7 @@ jobs:
             - name: Install cargo-zigbuild
               run: pip install cargo-zigbuild
             - name: Build (release)
-              run: cargo zigbuild --release --locked --target x86_64-unknown-linux-musl
+              run: cargo zigbuild --release --locked --target x86_64-unknown-linux-musl --features all-formats
             - name: Upload Build
               uses: actions/upload-artifact@v4
               with:
